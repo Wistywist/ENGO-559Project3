@@ -1,5 +1,6 @@
 
-%clear all; clc; close all;
+%clear all; clc; 
+close all;
 % Determine where your m-file's folder is.
 folder = fileparts(which(mfilename)); 
 % Add that folder plus all subfolders to the path.
@@ -15,7 +16,6 @@ v.FrameRate = 1;
 open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
-    %image(image<200)=0;
     images.(im{i}) = image;
     imshow(image)
 
@@ -94,7 +94,6 @@ v.FrameRate = 1;
 open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
-
     all_images = cat(3,all_images,image);
 
     sift = detectSIFTFeatures(image);
@@ -152,7 +151,6 @@ open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
         edges = edge(image,"log");
-    image(image<231) = 0;
     all_images = cat(3,all_images,image);
 
     edges = edge(image,"log");
@@ -178,7 +176,6 @@ open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
         edges = edge(image,"log");
-    %image(image<231) = 0;
     all_images = cat(3,all_images,image);
 
     std = stdfilt(image);
@@ -220,7 +217,7 @@ close all
 
 % Running the feature matching algorithm that takes two images and returns
 % vectors of estimated motion in the sea ice.
-vector = featureMatch(images.im2,images.im3,all_SIFT_corner.im2,10,15);
+vector = featureMatch(images.im2,images.im3,all_SIFT_corner.im2,8,12);
 %
 close all
 % display the two images side by side
@@ -297,7 +294,7 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
         else
             corr = normxcorr2(initial_feature,window);
 
-            if max(max(corr)) < 0.5
+            if max(max(corr)) < 0.4
                 corr = [];
             else
                 [dy,dx] = find(corr==max(corr(:)));

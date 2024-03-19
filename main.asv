@@ -1,5 +1,6 @@
 
-%clear all; clc; close all;
+%clear all; clc; 
+close all;
 % Determine where your m-file's folder is.
 folder = fileparts(which(mfilename)); 
 % Add that folder plus all subfolders to the path.
@@ -15,7 +16,6 @@ v.FrameRate = 1;
 open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
-    image(image<200)=0;
     images.(im{i}) = image;
     imshow(image)
 
@@ -87,16 +87,16 @@ close(v)
 %% Sift Corners
 % this loop will process each image and let us try different techniques on
 % it
+close all;
 all_SIFT_corner = [];
 v = VideoWriter('SIFT.avi');
 v.FrameRate = 1;
 open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
-
     all_images = cat(3,all_images,image);
 
-    sift = detectSURFFeatures(image);
+    sift = detectSIFTFeatures(image);
 
     all_SIFT_corner.(im{i}) = sift;
 
@@ -151,7 +151,6 @@ open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
         edges = edge(image,"log");
-    image(image<231) = 0;
     all_images = cat(3,all_images,image);
 
     edges = edge(image,"log");
@@ -177,7 +176,6 @@ open(v)
 for i = 1:length(image_names)
     image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
         edges = edge(image,"log");
-    %image(image<231) = 0;
     all_images = cat(3,all_images,image);
 
     std = stdfilt(image);
@@ -219,11 +217,11 @@ close all
 
 % Running the feature matching algorithm that takes two images and returns
 % vectors of estimated motion in the sea ice.
-vector = featureMatch(std_edges.im1,std_edges.im2,all_harris_corner.im1.selectStrongest(1000),20,25);
+vector = featureMatch(std.im2,images.im3,all_SIFT_corner.im2,12,24);
 %
 close all
 % display the two images side by side
-imshowpair(images.im1,images.im2,'montage')
+imshowpair(images.im2,images.im3,'montage')
 hold on
 
 % Plot the vectors on the first image showing the estimated motion of the
@@ -279,7 +277,7 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
         % window around the feature area in the second image
         window = im2gray(im2(xwindow,ywindow));
 
-        figure(1)
+        %figure(1)
 
         %imshowpair(window,initial_feature,'montage')
         
@@ -296,20 +294,22 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
         else
             corr = normxcorr2(initial_feature,window);
 
-            if max(max(corr)) < 0.6
+            if max(max(corr)) < 0.4
                 corr = [];
             else
                 [dy,dx] = find(corr==max(corr(:)));
-                dx = dx -size(initial_feature,1)/2 -size(window,1)/2 ;
-                dy = dy  -size(initial_feature,2)/2 -size(window,2)/2 ; 
+                            scatter(dx,dy)
+                dx = dx-size(initial_feature,1)/2 -size(window,1)/2  ;
+                dy = dy-size(initial_feature,2)/2 - size(window,2)/2 ; 
 
-            scatter(dx,dy)
-            drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
-            hold off
-            figure(2)
-            surf(corr);
-            shading interp 
-            view(2);
+            %scatter(dx,dy)
+            %drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
+            %hold off
+            %figure(2)
+            %surf(corr);
+            %shading interp 
+            %view(2);
+            
             end
 
         end
