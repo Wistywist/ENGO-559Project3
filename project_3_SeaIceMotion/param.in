@@ -1,0 +1,13 @@
+960, 720	<xsize>, <ysize>
+15, 15	 	<box width>, <box height>
+10		<range>
+0, 0		<skip value>, <post skip range>
+0, 0 		<sub value>, <sub range>
+5		<overlap>
+000,256 		<min>, <max>
+24.		<time difference>
+1.		<resolution>
+1b		<image type>
+y		<buffer option>
+none		`<map file>
+none		<points file>

@@ -1,0 +1,350 @@
+
+%clear all; clc; close all;
+% Determine where your m-file's folder is.
+folder = fileparts(which(mfilename)); 
+% Add that folder plus all subfolders to the path.
+addpath(genpath(folder));
+
+im = {'im1','im2','im3','im4','im5','im6','im7','im8'};
+
+image_names = dir("*/*.im");
+all_images = [];
+
+v = VideoWriter('ice.avi');
+v.FrameRate = 1;
+open(v)
+for i = 1:length(image_names)
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+    image(image<200)=0;
+    images.(im{i}) = image;
+    imshow(image)
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+end
+
+close(v)
+%implay('ice.avi')
+%% Differencing
+% this loop will process each image and let us try different techniques on
+% it
+all = [];
+v = VideoWriter('imdiff.avi');
+v.FrameRate = 1;
+open(v)
+for i = 1:length(image_names)-1
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+
+
+    all_images = cat(3,all_images,image);
+
+    if i > 1
+        processed_image = imabsdiff(image,all_images(:,:,i-1));
+    else
+        processed_image = image;
+    end
+
+
+
+    imshowpair(image,processed_image,'montage')
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+end
+close(v)
+%implay("imdiff.avi")
+
+%% Harris Corners
+% this loop will process each image and let us try different techniques on
+% it
+all_harris_corner = [];
+v = VideoWriter('Harris_Corners.avi');
+v.FrameRate = 1;
+open(v)
+for i = 1:length(image_names)
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+
+    all_images = cat(3,all_images,image);
+
+    harris_corner = detectHarrisFeatures(image);
+
+    all_harris_corner.(im{i}) = harris_corner;
+
+    imshow(image);
+    hold on
+    harris_corner.plot;
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+end
+close(v)
+%implay("Harris_Corners.avi")
+
+
+%% Sift Corners
+% this loop will process each image and let us try different techniques on
+% it
+all_SIFT_corner = [];
+v = VideoWriter('SIFT.avi');
+v.FrameRate = 1;
+open(v)
+for i = 1:length(image_names)
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+
+    all_images = cat(3,all_images,image);
+
+    sift = detectSURFFeatures(image);
+
+    all_SIFT_corner.(im{i}) = sift;
+
+    imshow(image);
+    hold on
+    sift.plot;
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+end
+close(v)
+%% Shi Tomasi Corners
+% this loop will process each image and let us try different techniques on
+% it
+ close all;
+all_shi = [];
+v = VideoWriter('shi_tomasi_corners.avi');
+v.FrameRate = 1;
+open(v)
+for i = 1:length(image_names)
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+    image(image<1) = 0;
+
+    all_images = cat(3,all_images,image);
+
+    shi = detectMinEigenFeatures(image);
+    all_shi.(im{i}) = shi;
+    strongest_shi = shi.selectStrongest(300);
+
+
+
+    imshow(image);
+    hold on
+    %strongest_shi.plot();
+    scatter(strongest_shi.Location(:,1),strongest_shi.Location(:,2),15,"red")
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+end
+close(v)
+%implay("shi_tomasi_corners.avi")
+
+
+%% Edge detection
+close all force
+% this loop will process each image and let us try different techniques on
+% it
+v = VideoWriter("log_edges.avi");
+open(v)
+for i = 1:length(image_names)
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+        edges = edge(image,"log");
+    image(image<231) = 0;
+    all_images = cat(3,all_images,image);
+
+    edges = edge(image,"log");
+
+
+    %
+
+    imshowpair(image,edges,'montage')
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+end
+close(v)
+%implay("log_edges.avi")
+
+%% Local Standard Deviation
+close all force
+% this loop will process each image and let us try different techniques on
+% it
+v = VideoWriter("std.avi");
+open(v)
+for i = 1:length(image_names)
+    image = imopener("project_3_SeaIceMotion/"+image_names(i).name);
+        edges = edge(image,"log");
+    %image(image<231) = 0;
+    all_images = cat(3,all_images,image);
+
+    std = stdfilt(image);
+    %std =stdfilt(std);
+
+
+
+
+    imshowpair(image,std,'montage')
+
+    frame = getframe(gcf);
+
+    writeVideo(v,frame);
+
+    std_edges.(im{i}) = std;
+end
+close(v)
+%implay("std.avi")
+
+
+%% Feature guided matching
+
+%for this algorithm we need to start with locations we want to find again
+%in each image pair. To do this, we are going to use corner detection from
+%the shi algoritm, and for computational efficienc use the strongest 300 or
+%so corner points.
+
+%iterating through each image will allow us template search in a small
+%image around that area, and find the most correlated area and detect a
+%match, and then calculate the difference between its prior position to its
+%new position!
+
+% using the location, we can try template matching using different
+% processed images such as the std filter image or raw image itself.
+
+
+clc
+close all
+
+% Running the feature matching algorithm that takes two images and returns
+% vectors of estimated motion in the sea ice.
+vector = featureMatch(std_edges.im1,std_edges.im2,all_harris_corner.im1.selectStrongest(1000),20,25);
+%
+close all
+% display the two images side by side
+imshowpair(images.im1,images.im2,'montage')
+hold on
+
+% Plot the vectors on the first image showing the estimated motion of the
+% sea ice
+quiver(vector.initial_location(:,1),vector.initial_location(:,2),vector.delta(:,1),vector.delta(:,2),0,Color='red')
+
+% plot the intial and estimated new locations of features on the 2nd image
+% in the montage
+scatter(vector.initial_location(:,1)+720,vector.initial_location(:,2))
+scatter(vector.new_location(:,1)+720,vector.new_location(:,2))
+legend()
+
+function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
+    %im 1 and 2 are the images to have there values matched
+    % and feature locations is the xy coords of the expected features in
+    % the image, input as a corner structure
+    % featsize is the n,n size of the feature to be sliced from the image,
+    % and searchwindow is the radius around the feature location to search
+    % for, input as a integer value 
+
+    features.Location = round(features.Location);
+
+    newloc = [];
+
+    %iterate through each feature location
+    for ft = 1:length(features)
+
+        %slice the feature from the first image
+        xslice = (features.Location(ft,1)-featSize) : (features.Location(ft,1)+featSize);
+        yslice = (features.Location(ft,2)-featSize) : (features.Location(ft,2)+featSize);
+
+
+        xslice = xslice(0<xslice);
+        xslice = xslice(xslice<960); 
+
+        yslice = yslice(yslice>0);
+        yslice = yslice(yslice<720);
+        
+        %slice the shape of the feature from the intial image
+
+        initial_feature = im2gray(im1(xslice,yslice));
+
+
+        xwindow = (features.Location(ft,1)-searchWindow) : (features.Location(ft,1)+searchWindow);
+        ywindow = (features.Location(ft,2)-searchWindow) : (features.Location(ft,2)+searchWindow);
+
+        xwindow = xwindow(xwindow<960);
+        ywindow = ywindow(ywindow<720);
+
+        xwindow = xwindow(0<xwindow);
+        ywindow = ywindow(0<ywindow);
+        
+        % window around the feature area in the second image
+        window = im2gray(im2(xwindow,ywindow));
+
+        figure(1)
+
+        %imshowpair(window,initial_feature,'montage')
+        
+        hold on
+
+
+        %now we need to slide the feature through the search window, taking
+        %their correlation coefficcient to find the most likely position of
+        %the new feature point. offsetting so that the upper end of our
+        %feature fits within the window
+
+        if isempty(initial_feature)
+            corr = [];
+        else
+            corr = normxcorr2(initial_feature,window);
+
+            if max(max(corr)) < 0.6
+                corr = [];
+            else
+                [dy,dx] = find(corr==max(corr(:)));
+                dx = dx -size(initial_feature,1)/2 -size(window,1)/2 ;
+                dy = dy  -size(initial_feature,2)/2 -size(window,2)/2 ; 
+
+            scatter(dx,dy)
+            drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
+            hold off
+            figure(2)
+            surf(corr);
+            shading interp 
+            view(2);
+            end
+
+        end
+
+
+        %finding the linear index of hte position of the best fitting new
+        %feature, allows us to find the change in x and y and plot the new
+        %point from the original location of the feature
+        if isempty(corr)
+            newloc = [newloc; [NaN,NaN]];
+        else
+            newloc =[newloc; [dx,dy] + features.Location(ft,:)];
+        end
+
+
+          
+
+
+
+    
+
+
+    end
+   vectors.initial_location = features.Location;
+    vectors.new_location = newloc;
+    vectors.delta = newloc - features.Location;
+
+
+
+end
+
+
+
+
+
+
+
+
