@@ -102,12 +102,13 @@ for i = 1:length(image_names)
 
     imshow(image);
     hold on
-    sift.plot;
+    scatter(sift.Location(:,1),sift.Location(:,2),'red');
 
     frame = getframe(gcf);
 
     writeVideo(v,frame);
 end
+implay('SIFT.avi')
 close(v)
 %% Shi Tomasi Corners
 % this loop will process each image and let us try different techniques on
@@ -217,7 +218,7 @@ close all
 
 % Running the feature matching algorithm that takes two images and returns
 % vectors of estimated motion in the sea ice.
-vector = featureMatch(images.im2,images.im3,all_SIFT_corner.im2,8,12);
+vector = featureMatch(images.im2,images.im3,all_SIFT_corner.im2,10,30);
 %
 close all
 % display the two images side by side
@@ -226,7 +227,7 @@ hold on
 
 % Plot the vectors on the first image showing the estimated motion of the
 % sea ice
-quiver(vector.initial_location(:,1),vector.initial_location(:,2),vector.delta(:,1),vector.delta(:,2),0,Color='red')
+quiver(vector.initial_location(:,1),vector.initial_location(:,2),vector.delta(:,1),vector.delta(:,2),0,Color='red',LineWidth=2)
 
 % plot the intial and estimated new locations of features on the 2nd image
 % in the montage
@@ -255,29 +256,29 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
 
 
         xslice = xslice(0<xslice);
-        xslice = xslice(xslice<960); 
+        xslice = xslice(xslice<720); 
 
         yslice = yslice(yslice>0);
-        yslice = yslice(yslice<720);
+        yslice = yslice(yslice<960);
         
         %slice the shape of the feature from the intial image
 
-        initial_feature = im2gray(im1(xslice,yslice));
+        initial_feature = im2gray(im1(yslice,xslice));
 
 
         xwindow = (features.Location(ft,1)-searchWindow) : (features.Location(ft,1)+searchWindow);
         ywindow = (features.Location(ft,2)-searchWindow) : (features.Location(ft,2)+searchWindow);
 
-        xwindow = xwindow(xwindow<960);
-        ywindow = ywindow(ywindow<720);
+        xwindow = xwindow(xwindow<720);
+        ywindow = ywindow(ywindow<960);
 
         xwindow = xwindow(0<xwindow);
         ywindow = ywindow(0<ywindow);
         
         % window around the feature area in the second image
-        window = im2gray(im2(xwindow,ywindow));
+        window = im2gray(im2(ywindow,xwindow));
 
-        %figure(1)
+        figure(1)
 
         %imshowpair(window,initial_feature,'montage')
         
@@ -293,23 +294,33 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
             corr = [];
         else
             corr = normxcorr2(initial_feature,window);
+            corr = corr((featSize*2):(end-featSize*2),(featSize*2):(end-featSize*2));
+            %disp(size(corr))
 
             if max(max(corr)) < 0.4
                 corr = [];
+            elseif any(size(corr)==0)
+                corr=[];
+
             else
                 [dy,dx] = find(corr==max(corr(:)));
-                            scatter(dx,dy)
-                dx = dx-size(initial_feature,1)/2 -size(window,1)/2  ;
-                dy = dy-size(initial_feature,2)/2 - size(window,2)/2 ; 
+               % drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
 
-            %scatter(dx,dy)
-            %drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
-            %hold off
-            %figure(2)
-            %surf(corr);
-            %shading interp 
-            %view(2);
-            
+
+               dx = dx-size(initial_feature,1)-1;
+               dy = dy-size(initial_feature,2)-1 ; 
+                %drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
+
+                %dx = dx;% -size(window,1)/2  ;
+                %dy = dy;%- size(window,2)/2 ; 
+
+
+               % hold off
+                %figure(2)
+                %surf(corr);
+                %shading interp 
+                %view(2);
+
             end
 
         end

@@ -102,12 +102,13 @@ for i = 1:length(image_names)
 
     imshow(image);
     hold on
-    sift.plot;
+    scatter(sift.Location(:,1),sift.Location(:,2),'red');
 
     frame = getframe(gcf);
 
     writeVideo(v,frame);
 end
+implay('SIFT.avi')
 close(v)
 %% Shi Tomasi Corners
 % this loop will process each image and let us try different techniques on
@@ -217,7 +218,7 @@ close all
 
 % Running the feature matching algorithm that takes two images and returns
 % vectors of estimated motion in the sea ice.
-vector = featureMatch(std.im2,images.im3,all_SIFT_corner.im2,12,24);
+vector = featureMatch(images.im2,images.im3,all_SIFT_corner.im2,10,30);
 %
 close all
 % display the two images side by side
@@ -277,9 +278,9 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
         % window around the feature area in the second image
         window = im2gray(im2(xwindow,ywindow));
 
-        %figure(1)
+        figure(1)
 
-        %imshowpair(window,initial_feature,'montage')
+        imshowpair(window,initial_feature,'montage')
         
         hold on
 
@@ -293,23 +294,28 @@ function vectors = featureMatch(im1,im2,features,featSize,searchWindow)
             corr = [];
         else
             corr = normxcorr2(initial_feature,window);
+            corr = corr((featSize*2):(end-fe*2));
 
             if max(max(corr)) < 0.4
                 corr = [];
             else
                 [dy,dx] = find(corr==max(corr(:)));
-                            scatter(dx,dy)
-                dx = dx-size(initial_feature,1)/2 -size(window,1)/2  ;
-                dy = dy-size(initial_feature,2)/2 - size(window,2)/2 ; 
 
-            %scatter(dx,dy)
-            %drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
-            %hold off
-            %figure(2)
-            %surf(corr);
-            %shading interp 
-            %view(2);
-            
+
+                dx = dx-size(initial_feature,1)/2   ;
+                dy = dy-size(initial_feature,2)/2 ; 
+                drawrectangle(gca,'Position',[dx,dy,size(initial_feature,2),size(initial_feature,1)],'FaceAlpha',0);
+
+                dx = dx -size(window,1)/2  ;
+                dy = dy- size(window,2)/2 ; 
+
+
+                hold off
+                figure(2)
+                surf(corr);
+                shading interp 
+                view(2);
+
             end
 
         end
